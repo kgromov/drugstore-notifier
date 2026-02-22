@@ -33,11 +33,16 @@ public class JdbcClient {
         return DriverManager.getConnection(this.dbUrl, this.dbUser, this.dbPassword);
     }
 
-    public ResultSet selectQuery(String sqlQuery) {
+    public ResultSet selectQuery(String sqlQuery, Object... args) {
         try {
             Connection connection = this.getConnection();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(sqlQuery);
+            PreparedStatement statement = connection.prepareStatement(sqlQuery);
+            if (nonNull(args)) {
+                for (int i =0; i < args.length; i++) {
+                    statement.setObject(i + 1, args[i]);
+                }
+            }
+            ResultSet resultSet = statement.executeQuery();
             this.activeConnectionResources.add(new ConnectionResources(connection, statement, resultSet));
             return resultSet;
         } catch (SQLException e) {
