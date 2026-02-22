@@ -1,9 +1,9 @@
 package org.kgromov;
 
-public class RecipientJdbcRepository implements JdbcRepository<Recipient> {
+public class RecipientJdbcRepository extends JdbcRepository<Recipient> {
 
     @Override
-    public JdbcMapper<Recipient> domainMapper() {
+    protected JdbcMapper<Recipient> domainMapper() {
         return new RecipientJdbcMapper();
     }
 }

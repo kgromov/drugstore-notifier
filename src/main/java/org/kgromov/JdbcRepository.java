@@ -4,31 +4,42 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 
-public interface JdbcRepository<T> {
+public abstract class JdbcRepository<T> {
 
-    default T selectOne(String query) {
+    public Optional<T> selectOne(String query) {
         return this.selectOne(query, this.domainMapper());
     }
 
-    default T selectOne(String query, JdbcMapper<T> mapper) {
-        ResultSet rs = this.select(query);
-        return this.mapSingle(rs, mapper);
+    public Optional<T> selectOne(String query, JdbcMapper<T> mapper) {
+        try (ResultSet rs = this.select(query)) {
+            var mapped = this.mapToModel(rs, mapper);
+            if (mapped.size() > 1) {
+                throw new IllegalStateException("Multiple records found for " + query);
+            }
+            return mapped.isEmpty() ? Optional.empty() : Optional.of(mapped.getFirst());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    default List<T> selectAll(String query) {
+    public List<T> selectAll(String query) {
         return this.selectAll(query, this.domainMapper());
     }
 
-    default List<T> selectAll(String query, JdbcMapper<T> mapper) {
-        ResultSet rs = this.select(query);
-        return this.mapMultiple(rs, mapper);
+    public List<T> selectAll(String query, JdbcMapper<T> mapper) {
+        try(ResultSet rs = this.select(query)) {
+            return this.mapToModel(rs, mapper);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    default int count(String query) {
+    public int count(String query) {
         int count = 0;
         try (ResultSet rs = this.select(query)) {
             if (rs.next()) {
@@ -40,34 +51,19 @@ public interface JdbcRepository<T> {
         }
     }
 
-    JdbcMapper<T> domainMapper();
+    protected abstract JdbcMapper<T> domainMapper();
 
     private ResultSet select(String sqlQuery) {
         return JdbcClient.getInstance().selectQuery(sqlQuery);
     }
 
-    default <V> V mapSingle(ResultSet rs, JdbcMapper<V> mapper) {
-        try {
-            if (isNull(rs) || !rs.next()) {
-                return null;
-            }
-            return mapper.mapToModel(rs);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    default <V> List<V> mapMultiple(ResultSet rs, JdbcMapper<V> mapper) {
+    private <V> List<V> mapToModel(ResultSet rs, JdbcMapper<V> mapper) throws SQLException {
         if (isNull(rs)) {
             return emptyList();
         }
         List<V> result = new ArrayList<>();
-        try {
-            while (rs.next()) {
-                result.add(mapper.mapToModel(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        while (rs.next()) {
+            result.add(mapper.mapToModel(rs));
         }
         return result;
     }

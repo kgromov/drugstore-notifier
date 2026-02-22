@@ -23,8 +23,10 @@ public class App {
                 }
             }
 
-            List<Recipient> recipients = new RecipientJdbcRepository().selectAll("SELECT * FROM Recipient");
+            var recipientRepository = new RecipientJdbcRepository();
+            List<Recipient> recipients = recipientRepository.selectAll("SELECT * FROM Recipient");
             recipients.forEach(System.out::println);
+            System.out.println(recipientRepository.count("SELECT * FROM Recipient"));
 
             ResultSet resultSet1 = statement1.executeQuery("SELECT * FROM Recipient");
             while (resultSet1.next()) {

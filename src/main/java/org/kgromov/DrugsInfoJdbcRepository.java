@@ -1,9 +1,9 @@
 package org.kgromov;
 
-public class DrugsInfoJdbcRepository implements JdbcRepository<DrugsInfo> {
+public class DrugsInfoJdbcRepository extends JdbcRepository<DrugsInfo> {
 
     @Override
-    public JdbcMapper<DrugsInfo> domainMapper() {
+    protected JdbcMapper<DrugsInfo> domainMapper() {
         return new DrugsIntoJdbcMapper();
     }
 }
