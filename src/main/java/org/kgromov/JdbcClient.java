@@ -1,15 +1,15 @@
 package org.kgromov;
 
 import java.sql.*;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 public class JdbcClient {
     private static final JdbcClient instance = new JdbcClient();
-    private final Queue<ConnectionResources> activeConnectionResources;
 
     private final String dbUrl;
     private final String dbUser;
@@ -22,7 +22,6 @@ public class JdbcClient {
         this.dbUrl = environment.getProperty("DATASOURCE_URL", defaultDatasourceUrl);
         this.dbUser = environment.getProperty("DATASOURCE_USERNAME", "root");
         this.dbPassword = environment.getProperty("DATASOURCE_PASSWORD", "admin");
-        this.activeConnectionResources = new LinkedBlockingQueue<>();
     }
 
     public static JdbcClient getInstance() {
@@ -33,42 +32,29 @@ public class JdbcClient {
         return DriverManager.getConnection(this.dbUrl, this.dbUser, this.dbPassword);
     }
 
-    public ResultSet selectQuery(String sqlQuery, Object... args) {
-        try {
-            Connection connection = this.getConnection();
-            PreparedStatement statement = connection.prepareStatement(sqlQuery);
+    public <T> List<T> selectQuery(String sqlQuery, JdbcMapper<T> mapper, Object... args) {
+        try (Connection connection = this.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
             if (nonNull(args)) {
-                for (int i =0; i < args.length; i++) {
+                for (int i = 0; i < args.length; i++) {
                     statement.setObject(i + 1, args[i]);
                 }
             }
             ResultSet resultSet = statement.executeQuery();
-            this.activeConnectionResources.add(new ConnectionResources(connection, statement, resultSet));
-            return resultSet;
+            return this.mapToModel(resultSet, mapper);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void releaseResources() {
-        var resource = this.activeConnectionResources.poll();
-        while (nonNull(resource)) {
-           this.close(resource.resultSet());
-           this.close(resource.statement());
-           this.close(resource.connection());
+    private <V> List<V> mapToModel(ResultSet rs, JdbcMapper<V> mapper) throws SQLException {
+        if (isNull(rs)) {
+            return emptyList();
         }
+        List<V> result = new ArrayList<>();
+        while (rs.next()) {
+            result.add(mapper.mapToModel(rs));
+        }
+        return result;
     }
-
-    private void close(AutoCloseable resource) {
-        if (isNull(resource)) {
-            return;
-        }
-        try {
-            resource.close();
-        } catch (Exception e) {
-            System.out.println("Failed to close resource");
-        }
-    }
-
-    record ConnectionResources(Connection connection, Statement statement, ResultSet resultSet) {}
 }
