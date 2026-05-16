@@ -1,11 +1,14 @@
 package org.kgromov;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultAbsSender;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 public class TelegramMessageSender {
+    private static final Logger log = LoggerFactory.getLogger(TelegramMessageSender.class);
     private final DefaultAbsSender bot;
     private final RecipientJdbcRepository recipientRepository;
     private final DrugsInfoJdbcRepository drugsInfoRepository;
@@ -26,7 +29,7 @@ public class TelegramMessageSender {
     }
 
     private void sendMessage(Recipient recipient, DrugsInfo drugsInfo) {
-        System.out.printf("\nDrug %s expired on %s. Inform recipients.%n", drugsInfo.name(), drugsInfo.expirationDate());
+        log.info("Drug {} expired on {}. Inform recipients.", drugsInfo.name(), drugsInfo.expirationDate());
         String message = "%s of category = %s is expired on %s".formatted(drugsInfo.name(), drugsInfo.category(), drugsInfo.expirationDate());
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(recipient.chatId())
@@ -35,6 +38,7 @@ public class TelegramMessageSender {
         try {
             bot.execute(sendMessage);
         } catch (TelegramApiException e) {
+            log.error("Failed to send message to recipient", e);
             throw new RuntimeException(e);
         }
     }

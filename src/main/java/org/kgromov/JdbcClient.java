@@ -1,5 +1,8 @@
 package org.kgromov;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +12,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 public class JdbcClient {
+    private static final Logger log = LoggerFactory.getLogger(JdbcClient.class);
     private static final JdbcClient instance = new JdbcClient();
-
 
     private JdbcClient() {
     }
@@ -34,6 +37,7 @@ public class JdbcClient {
             ResultSet resultSet = statement.executeQuery();
             return this.mapToModel(resultSet, mapper);
         } catch (SQLException e) {
+            log.error("Failed to execute query", e);
             throw new RuntimeException(e);
         }
     }

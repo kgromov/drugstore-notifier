@@ -1,12 +1,15 @@
 package org.kgromov;
 
 import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 class DatabaseConfig {
+    private static final Logger log = LoggerFactory.getLogger(DatabaseConfig.class);
     private static final DatabaseConfig instance = new DatabaseConfig();
     private final MysqlConnectionPoolDataSource dataSource;
 
@@ -32,6 +35,7 @@ class DatabaseConfig {
             dataSource.setUseSSL(false);
             dataSource.setAllowPublicKeyRetrieval(true);
         } catch (SQLException e) {
+            log.error("Could not set up Database", e);
             throw new RuntimeException(e);
         }
         return dataSource;
