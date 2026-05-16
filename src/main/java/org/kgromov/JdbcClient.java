@@ -11,17 +11,8 @@ import static java.util.Objects.nonNull;
 public class JdbcClient {
     private static final JdbcClient instance = new JdbcClient();
 
-    private final String dbUrl;
-    private final String dbUser;
-    private final String dbPassword;
 
     private JdbcClient() {
-        var environment = Environment.getInstance();
-        String databaseName = environment.getProperty("DATASOURCE_DATABASE", "drugstore");
-        String defaultDatasourceUrl = "jdbc:mysql://localhost:3306/%s".formatted(databaseName);
-        this.dbUrl = environment.getProperty("DATASOURCE_URL", defaultDatasourceUrl);
-        this.dbUser = environment.getProperty("DATASOURCE_USERNAME", "root");
-        this.dbPassword = environment.getProperty("DATASOURCE_PASSWORD", "admin");
     }
 
     public static JdbcClient getInstance() {
@@ -29,7 +20,7 @@ public class JdbcClient {
     }
 
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(this.dbUrl, this.dbUser, this.dbPassword);
+        return DatabaseConfig.getInstance().getConnection();
     }
 
     public <T> List<T> selectQuery(String sqlQuery, JdbcMapper<T> mapper, Object... args) {
