@@ -8,6 +8,16 @@ public class App {
     static void main(String[] args) {
         var messageSender = new TelegramMessageSender();
         var jobScheduler = JobRunr.configure()
+                /*
+                 * StorageProvider declare interface via DatabaseOptions to setUpStorageProvider.
+                 * DefaultSqlStorageProvider implements it with migration when DatabaseOptions is defined as CREATE (default).
+                 * The following tables created via migration:
+                 * - jobrunr_jobs
+                 * - jobrunr_recurring_jobs
+                 * - jobrunr_backgroundjobservers
+                 * - jobrunr_metadata
+                 * - jobrunr_migrations
+                 */
                 .useStorageProvider(new MySqlStorageProvider(DatabaseConfig.getInstance().getDataSource()))
                 .useBackgroundJobServer()
                 .useDashboard()             // http://localhost:8000/dashboard
