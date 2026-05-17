@@ -1,5 +1,6 @@
 package org.kgromov;
 
+import org.jobrunr.jobs.annotations.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultAbsSender;
@@ -20,6 +21,7 @@ public class TelegramMessageSender {
         this.drugsInfoRepository = new DrugsInfoJdbcRepository();
     }
 
+    @Job(name = "Notify recipients on expired drugs", retries = 0)
     public void notifyRecipientsOnExpired() {
         var recipients = recipientRepository.selectAll("SELECT * FROM Recipient");
         var expiredDrugs = drugsInfoRepository.selectAll("SELECT * FROM DrugsInfo WHERE expiration_date < CURRENT_DATE");
